@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 """
-A simple script to create simple gcode for my plotter.
- 
+A simple script to create simple gcode for my simple plotter.
+
+Armin H. 2-7-2020
 """
 import os
 import argparse
@@ -11,14 +12,6 @@ def save_gcode_to_file(gc_str, fn):
     with open(fn, 'w') as f:
         f.write(gc_str)
     verbose_print('Saved to file {}'.format(fn))
-
-
-origin = (0, 0)
-# M3 spindle command changes pulse duration of PWM output,
-# driving the RC servo that lifts the pen
-# S10 has pen in down position, S120 in up position
-pen_down = "M3 S10\nG4 P0.5; Pen down\n"
-pen_up = "M3 S120\nG4 P0.5; Pen up\n"
 
 
 def parse_args():
@@ -33,6 +26,10 @@ def parse_args():
     PARSER.add_argument('-v', '--verbose', help='Print out detailed info.', action="store_true")
     PARSER.add_argument('-o', '--gcode_output', 
                         help='Save gcode to file if file name specified.', type=str, default='')
+    PARSER.add_argument('--pen_up', 
+                        help='GCode for Pen Up movement.', type=str, default="M3 S120\nG4 P0.5; Pen up\n")
+    PARSER.add_argument('--pen_down', 
+                        help='GCode for Pen Down movement.', type=str, default="M3 S10\nG4 P0.5; Pen down\n")
     return PARSER.parse_args()
     
 def verbose_print(str, v=False):
@@ -44,11 +41,17 @@ def verbose_print(str, v=False):
     
 def main(config):
     # Draw box around full plotting area
+    origin = (0, 0)
     width=config.width[0]
     height=config.height[0]
     gridspacing = config.gridspacing[0]
     v = config.verbose
     gcode_output = config.gcode_output
+    # M3 spindle command changes pulse duration of PWM output,
+    # driving the RC servo that lifts the pen
+    # S10 has pen in down position, S120 in up position
+    pen_down = config.pen_down
+    pen_up = config.pen_up
     g1_speed = config.speed_g1 # mm/min speed for G1 command
     g0_speed = config.speed_g0 # mm/min speed for G0 command
     if (width % gridspacing) or (height % gridspacing):

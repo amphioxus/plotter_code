@@ -1,7 +1,8 @@
 # Gcode
-
 *.gcode
 *.gc
+*.svg
+
 
 # Below is the gitignore template from 
 # https://github.com/github/gitignore/blob/master/Python.gitignore

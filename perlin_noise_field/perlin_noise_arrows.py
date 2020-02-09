@@ -6,11 +6,18 @@ A script to produce a 2D field of flow vectors aligned using Perlin Noise
 * Can export to SVG file
 * Can export to GCode for plotting. Parameters need to be adjusted to fit one's plotter)
 
+Examples:
+
+Simplex noise, 200x200mm with 5mm step size and 20/20mm offset:
+python perlin_noise_arrows.py 200 200 5 --offset 20 20 -n "s|2|0.5|2.0|1024|1024"
+
+
 """
 import argparse
 import math
 import svgwrite
 import numpy as np
+import random
 try:
     import svgwrite
     from svgwrite import cm, mm 
@@ -18,7 +25,7 @@ except ImportError:
     print('svgwrite module needs to be installed.')
     print('https://github.com/mozman/svgwrite')
 try:
-    from noise import pnoise2, snoise2
+    from noise import pnoise3, snoise3
 except ImportError:
     print('Noise module needs to be installed.\nSee: ')
     print('https://github.com/caseman/noise')
@@ -28,15 +35,6 @@ except ImportError:
 #%%  SET PARAMETERS HERE:
 draw_svg=True
 export_gcode=True
-# octaves = 2
-# lacunarity=2.0
-#offset = (20,20) # where on the plotter bed should we start?
-# stepsize=5
-# height = 250
-# width = 250
-arrowlength=3
-tiplength=.20 # relative length of arrow tips (rel. to arrowlength). No tip if zero
-border = 2*arrowlength # border for boundary box
 
 #############################################################
 
@@ -48,6 +46,8 @@ def parse_args():
     PARSER.add_argument('stepsize', help='Stepsize, i.e. distance between arrows. (mm).', type=int,nargs=1)
     PARSER.add_argument('--offset', type=int, nargs=2, default=[50, 50],
                         help="Offset from origin")
+    PARSER.add_argument('--border', type=int, nargs=1, default=0,
+                        help="Border for bounding box rectangle.")
     PARSER.add_argument('-s0', '--g0_speed', help='Speed in mm/min for G0 command (fast placement)',
                         default=4000, type=int)
     PARSER.add_argument('-s1', '--g1_speed', help='Speed in mm/min for G1 command (pen movement)',
@@ -59,11 +59,13 @@ def parse_args():
                         help='GCode for Pen Down movement.', type=str, default="M3 S10\nG4 P0.5; Pen down\n")
     # octaves=1, persistence=0.5, lacunarity=2.0, repeatx=1024, repeaty=1024
     PARSER.add_argument('-n', '--noise_params', help='Parameters for Perlin noise, separated by '\
-        'a pipe  character. Parameters: p,s{pnoise or snoise}|octaves|persistence|lacunarity|repeat x|repeat y ', default='p|2|0.5|2.0|4096|4096')
+        'a pipe  character. Parameters: p,s{pnoise or snoise}|octaves|persistence|lacunarity|z (rand, or an integer|repeat x|repeat y ', default='p|2|0.5|2.0|rand|4096|4096')
+    PARSER.add_argument('-a', '--arrow_params', help='Parameters for arrows, each separated by '\
+        'a pipe character. Parameters: length|tiplength|rel', default='3|0.2|rel')
+    PARSER.add_argument('--rect_only', help='Only draw rectangle, not arrows',
+                        action='store_true')
     return PARSER.parse_args()
-    
-    
-    
+  
 def save_gcode_to_file(gc_str, fn):
     with open(fn, 'w') as f:
         f.write(gc_str)
@@ -84,7 +86,7 @@ def draw_svg_rectangle(dwg, ul, w, h, border):
                         end   = (pt4[0]*mm, pt4[1]*mm) ) )
     rlines.add( dwg.line(start = (pt4[0]*mm, pt4[1]*mm),
                         end   = (pt1[0]*mm, pt1[1]*mm) ) )
-                        
+
 def get_gcode_rectangle(ll, w, h, border, pendown, penup, s0=3000, s1=1000):
     """Gcode to draw a w*h rectange that corresponds to svg file
     coordinates. 
@@ -103,23 +105,43 @@ def get_gcode_rectangle(ll, w, h, border, pendown, penup, s0=3000, s1=1000):
     
     return gcode
 
+def parse_arrow_params(s):
+    params = s.split('|')
+    if len(params) != 3:
+        em = 'Arrow parameter must contain 3 elements, separated by |. \n'
+        em +='arrow length|tip length|rel. or absolute'
+        em +='E.g: "4|0.2|rel" for relative tip length'        
+        raise ValueError(em)
+    al = float(params[0])
+    tl = float(params[1])
+    at = params[2]
+    valid = ['rel', 'abs']
+    if at not in valid:
+        raise ValueError('Arrow tip type needs to be either "rel" or "abs"')
+    return (al, tl, at)
+        
 def parse_noise_params(s):
     #print("noise params")
     #print(s)
     params = s.split('|')
-    if len(params) != 6:
-        em = 'Noise parameter must contain 6 elements, separated by |. \n'
-        em +='noise type(p or s)|octaves|persistence|lacunarity|repeatx|repeaty'
+    if len(params) != 7:
+        em = 'Given noise parameter: {}\n'.format(s)
+        em += 'Noise parameter must contain 7 elements, separated by |. \n'
+        em +='noise type(p or s)|octaves|persistence|lacunarity|z|repeatx|repeaty\n'
         em +='E.g: "p|3|0.5|2|1024|1024"'
         raise ValueError(em)
     # cast into proper number types:
-    ntype, o, p, l, rx, ry = params
+    ntype, o, p, l, z, rx, ry = params
     octaves=int(o)
     persistence = float(p)
     lacunarity = float(l)
     repeatx = int(rx)
     repeaty = int(ry)
-    return (ntype, octaves, persistence, lacunarity, repeatx, repeaty)
+    if z == 'rand':
+        z = random.randint(1,1024)
+    else:
+        z = int(z)
+    return (ntype, octaves, persistence, lacunarity, z, repeatx, repeaty)
     
 class Arrow(object):
     """Describes an arrow with 4 points. An arrow is set up by specifying:
@@ -238,21 +260,25 @@ def main(config):
     width = config.width[0]
     height = config.height[0]
     stepsize = config.stepsize[0]
+    if (width % stepsize) or (height % stepsize):
+        raise ValueError('Width and height need to be evenly divisible by stepsize.')
     offset = config.offset
+    border = config.border
     g0_speed = config.g0_speed # mm/min for fast positioning moves
     g1_speed = config.g1_speed # mm/min for pen motion
     pen_down = config.pen_down
     pen_up = config.pen_up
-    ntype, octaves, persistence, lacunarity, repeatx, repeaty = parse_noise_params(config.noise_params)
+    ntype, octaves, persistence, lacunarity, z, repeatx, repeaty = parse_noise_params(config.noise_params)
     if ntype == 's':
-        noisetype = snoise2
+        noisetype = snoise3
     elif ntype == 'p':
-        noisetype = pnoise2
+        noisetype = pnoise3
     else:
         raise ValueError('Noise type must be "s" (simplex) or "p" (perlin improved noise).')
+    arrowlength, tiplength, tiptype = parse_arrow_params( config.arrow_params )
+    if tiptype == 'rel' and (tiplength > 1 or tiplength < 0):
+        raise ValueError('When tiptype is set to relative, tiplength needs to be 0 <= tl <= 1')
         
-    if (width % stepsize) or (height % stepsize):
-        raise ValueError('Width and height need to be evenly divisible by stepsize.')
     # file names for export
     fn='arrow_field-f{}-lac{}_{}x{}_{}step.svg'.format(octaves, lacunarity, width, height, stepsize)
     fngc='arrow_field-f{}-lac{}_{}x{}_{}step.gcode'.format(octaves, lacunarity, width, height, stepsize)
@@ -263,18 +289,24 @@ def main(config):
     print('Stepsize: {}mm'.format(stepsize))
     print('Offset: {}/{}'.format( offset[0], offset[1]))
     print('Noise params:')
+    print('Parameter string: {}'.format(config.noise_params))
     print('\tOctaves: {}'.format(octaves))
     print('\tPersistence: {}'.format(persistence))
     print('\tLacunarity: {}'.format(lacunarity))
+    print('\tZ-value: {}'.format(z))
     print('\trepeatx: {}'.format(repeatx))
     print('\trepeaty: {}'.format(repeaty))
+    print('Arrow parameters')
+    print('\tArrow length: {}'.format(arrowlength))
+    print('\tTip length {} ({})'.format(tiplength, tiptype))
+    
     
     if export_gcode:
         print('GCODE params')
-        print('Pen up command: {}'.format(pen_up))
-        print('Pen down command: {}'.format(pen_down))
-        print('G0 speed: {} mm/min'.format(g0_speed))
-        print('G1 speed: {} mm/min'.format(g1_speed))
+        print('\tPen up command: {}'.format(pen_up))
+        print('\tPen down command: {}'.format(pen_down))
+        print('\tG0 speed: {} mm/min'.format(g0_speed))
+        print('\tG1 speed: {} mm/min'.format(g1_speed))
         
     W = int(width/stepsize)+1
     H = int(height/stepsize)+1
@@ -282,16 +314,26 @@ def main(config):
     freq = 16.0 * octaves
     angles = []
     max_angle = 180
+    z=12
     # collect angles for 2D arrow field into a list:
     for y in range(0,H):
         for x in range(0,W):
-            nraw=noisetype(x / freq,
-                         y / freq,
-                         octaves,
-                         persistence = persistence,
-                         lacunarity = lacunarity,
-                         repeatx = repeatx,
-                         repeaty = repeaty)
+            if ntype == 's':
+                nraw=noisetype(x / freq,
+                             y / freq,
+                             z,
+                             octaves=octaves,
+                             persistence = persistence,
+                             lacunarity = lacunarity)
+            elif ntype == 'p':
+                nraw=noisetype(x / freq,
+                             y / freq,
+                             z,
+                             octaves=octaves,
+                             persistence = persistence,
+                             lacunarity = lacunarity,
+                             repeatx = repeatx,
+                             repeaty = repeaty)
             n = int(nraw * max_angle-1 + max_angle)
             angles.append( n )
     print('Angles: n = {}'.format(len(angles)))
@@ -307,13 +349,14 @@ def main(config):
         c=0
         # for y in range(offset[1], height+2*offset[1], stepsize):
         #     for x in range(offset[0], width+2*offset[0], stepsize):
-        for yt in range(0, H):
-            for xt in range(0, W):
-                x = xt*stepsize + offset[0]
-                y = yt*stepsize + offset[1]
-                a = Arrow((x,y), length=arrowlength, dir=angles[c], tiplength=tiplength)
-                a.draw_to_svg(dwg)
-                c+=1
+        if not config.rect_only:
+            for yt in range(0, H):
+                for xt in range(0, W):
+                    x = xt*stepsize + offset[0]
+                    y = yt*stepsize + offset[1]
+                    a = Arrow((x,y), length=arrowlength, dir=angles[c], tiplength=tiplength)
+                    a.draw_to_svg(dwg)
+                    c+=1
         if border:
             # draw_svg_rectangle(dwg, ul, w, h, border)
             draw_svg_rectangle(dwg, offset, width, height, border)
@@ -340,8 +383,7 @@ G1 F{s1}; speed when plotting
                 y=offset[1],
                 s1=g1_speed,
                 s0=g0_speed)
-        draw_arrows=False # debug
-        if draw_arrows:
+        if not config.rect_only:
             # Now draw the arrow objects:
             c=0
             for yt in range(0, H):
@@ -371,7 +413,6 @@ G1 F{s1}; speed when plotting
         gcode_string += "G0 F{} X0 Y0; go to 0/0".format(g0_speed)
     
         save_gcode_to_file(gcode_string, fngc)
-        print('Exported gcode. File: '+fngc)
     
 
 if __name__=="__main__":

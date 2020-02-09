@@ -7,9 +7,13 @@ A script to produce a 2D field of flow vectors aligned using Perlin Noise
 * Can export to GCode for plotting. Parameters need to be adjusted to fit one's plotter)
 
 Examples:
-
+---------
 Simplex noise, 200x200mm with 5mm step size and 20/20mm offset:
-python perlin_noise_arrows.py 200 200 5 --offset 20 20 -n "s|2|0.5|2.0|1024|1024"
+python perlin_noise_arrows.py 200 200 5 --offset 20 20 -n "s|2|0.5|2.0|rand|1024|1024"
+
+Improved Perlin noise, 150x200mm, using "13" for the z-axis of the noise to make it 
+repeatable.
+python perlin_noise_arrows.py 200 200 5 --offset 20 20 -n "p|2|0.5|2.0|13|1024|1024"
 
 
 """
@@ -400,7 +404,6 @@ G1 F{s1}; speed when plotting
                                                         pen_up,
                                                         img_height=height+2*offset[1])
                     c+=1
-            
         if border:
             # draw a box around our arrow field
             gcode_string += get_gcode_rectangle((offset[0], offset[1]),

@@ -1,6 +1,6 @@
 # Plotter code
 
-A collection of simple code for playing around with my OpenBuilds Acro 1515 plotter / laser engraver.
+A collection of simple code for playing around with my OpenBuilds Acro 55 plotter / laser engraver.
 
 ## Plotter hardware
 

@@ -55,14 +55,14 @@ def parse_args():
     PARSER.add_argument('--border', type=int, default=0,
                         help="Border for bounding box rectangle.")
     PARSER.add_argument('-s0', '--g0_speed', help='Speed in mm/min for G0 command (fast placement)',
-                        default=4000, type=int)
+                        default=2000, type=int)
     PARSER.add_argument('-s1', '--g1_speed', help='Speed in mm/min for G1 command (pen movement)',
-                        default=1500, type=int)
+                        default=1000, type=int)
     #PARSER.add_argument('-v', '--verbose', help='Print out detailed info.', action="store_true")
     PARSER.add_argument('--pen_up', 
-                        help='GCode for Pen Up movement.', type=str, default="M3 S120\nG4 P0.5; Pen up\n")
+                        help='GCode for Pen Up movement.', type=str, default="M3 S120")
     PARSER.add_argument('--pen_down', 
-                        help='GCode for Pen Down movement.', type=str, default="M3 S10\nG4 P0.5; Pen down\n")
+                        help='GCode for Pen Down movement.', type=str, default="M3 S10")
     # octaves=1, persistence=0.5, lacunarity=2.0, repeatx=1024, repeaty=1024
     PARSER.add_argument('-n', '--noise_params', help='Parameters for Perlin noise, separated by '\
         'a pipe  character. Parameters: p,s{pnoise or snoise}|octaves|persistence|lacunarity|z (rand, or an integer|repeat x|repeat y ', default='p|2|0.5|2.0|rand|4096|4096')
@@ -249,17 +249,21 @@ class Arrow(object):
         gcode = '; arrow id {}\n'.format(self.arrow_id)
         # first draw a->b
         gcode += "G0 F{} X{} Y{} Z0\n".format(self.g0_speed, self.a[0], ay)
-        gcode += pendown
+        gcode += pendown + '\n'
+        gcode += 'G4 P0.5; pen down \n'
         gcode += "G1 X{} Y{} Z0\n".format(self.b[0], by)
-        gcode += penup
+        gcode += penup + '\n'
+        gcode += 'G4 P0.5; pen up \n'
         if self.hastip:
             # now draw c->b->d
             gcode += "G0 F{} X{} Y{} Z0\n".format(self.g0_speed, self.c[0], cy)
-            gcode += pendown
+            gcode += pendown + '\n'
+            gcode += 'G4 P0.5;; pen down \n'
             gcode += "G1 F{} X{} Y{} Z0\n".format(self.g1_speed, self.c[0], cy)
             gcode += "G1 X{} Y{} Z0\n".format(self.b[0], by)
             gcode += "G1 X{} Y{} Z0\n".format(self.d[0], dy) 
-            gcode += penup
+            gcode += penup + '\n'
+            gcode += 'G4 P0.5; pen up \n'
         gcode += "\n"
         
         return gcode
@@ -384,15 +388,16 @@ G54; Work Coordinates
 G21; mm-mode
 G90; Absolute Positioning
 ; Plotter Mode Active
-M3 S120; pen up
+{pu}; pen up
 G0 Z0
 G0 F{s0} X{x} Y{y}; go to {x}/{y}
 G1 F{s1}; speed when plotting
 
-""".format( x=offset[0], 
-                y=offset[1],
-                s1=g1_speed,
-                s0=g0_speed)
+""".format( x=offset[0],
+            y=offset[1],
+            s1=g1_speed,
+            s0=g0_speed,
+            pu=pen_up)
         if not config.rect_only:
             # Now draw the arrow objects:
             c=0

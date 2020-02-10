@@ -218,7 +218,7 @@ class Arrow(object):
         """Draws the arrow into an svgwrite.Drawing object (dwg), using mm as units
         Note: Native origin of SVG is upper left, but for plotter it's lower left.
         """
-        alines = dwg.add(dwg.g(id='hlines', stroke='black'))
+        alines = dwg.add(dwg.g(id='a-{}'.format(self.arrow_id), stroke='black'))
         alines.add( dwg.line(start = (self.a[0]*mm, self.a[1]*mm), 
                              end   = (self.b[0]*mm, self.b[1]*mm)))
         if self.hastip:
@@ -349,7 +349,6 @@ def main(config):
             angles.append( n )
     print('Number of arrows N = {}'.format(len(angles)))
     # Export as SVG file:
-    
     if draw_svg:
         print('Creating SVG file')
         dwg = svgwrite.Drawing(filename=fn,

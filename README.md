@@ -43,6 +43,8 @@ For options, type:
 python placement_grid.py -h
 ```
 
+![OpenBuilds CONTROL screenshot](images/placement_grid_screenshot.png)
+
 
 ## Perlin noise field
 
@@ -51,9 +53,9 @@ Subfolder: perlin_noise_field
 
 A script to create 2D field of arrows, oriented using Perlin noise. (Uses: https://github.com/caseman/noise) 
 
-It creates an SVG file, as well as a gcode file that describes the arrows.
+It creates an SVG file, as well as a gcode file that describes the arrows. Here's a 30x30 example with default noise settings:
 
-
+![A sample field of arrows](images/Perlin_noise_field.jpg)
 
 
 

@@ -42,3 +42,19 @@ For options, type:
 ```
 python placement_grid.py -h
 ```
+
+
+## Perlin noise field
+
+Script: perlin_noise_arrows.py
+Subfolder: perlin_noise_field
+
+A script to create 2D field of arrows, oriented using Perlin noise. (Uses: https://github.com/caseman/noise) 
+
+It creates an SVG file, as well as a gcode file that describes the arrows.
+
+
+
+
+
+

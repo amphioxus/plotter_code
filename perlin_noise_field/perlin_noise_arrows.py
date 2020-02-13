@@ -248,24 +248,45 @@ class Arrow(object):
             
         gcode = '; arrow id {}\n'.format(self.arrow_id)
         # first draw a->b
-        gcode += "G0 F{} X{} Y{} Z0\n".format(self.g0_speed, self.a[0], ay)
-        gcode += pendown + '\n'
-        gcode += 'G4 P0.5; pen down \n'
-        gcode += "G1 X{} Y{} Z0\n".format(self.b[0], by)
-        gcode += penup + '\n'
-        gcode += 'G4 P0.5; pen up \n'
+        # gcode += "G0 F{} X{} Y{} Z0\n".format(self.g0_speed, self.a[0], ay)
+        # gcode += pendown + '\n'
+        # gcode += 'G4 P0.5; pen down \n'
+        # gcode += "G1 X{} Y{} Z0\n".format(self.b[0], by)
+        # gcode += penup + '\n'
+        # gcode += 'G4 P0.5; pen up \n'
+        # if self.hastip:
+        #     # now draw c->b->d
+        #     gcode += "G0 F{} X{} Y{} Z0\n".format(self.g0_speed, self.c[0], cy)
+        #     gcode += pendown + '\n'
+        #     gcode += 'G4 P0.5;; pen down \n'
+        #     gcode += "G1 F{} X{} Y{} Z0\n".format(self.g1_speed, self.c[0], cy)
+        #     gcode += "G1 X{} Y{} Z0\n".format(self.b[0], by)
+        #     gcode += "G1 X{} Y{} Z0\n".format(self.d[0], dy)
+        #     gcode += penup + '\n'
+        #     gcode += 'G4 P0.5; pen up \n'
+        # gcode += "\n"
+        
+        # REVERSE: draw tips first, then b->a (faster)
+        # first tips
         if self.hastip:
-            # now draw c->b->d
+            # draw c->b->d
             gcode += "G0 F{} X{} Y{} Z0\n".format(self.g0_speed, self.c[0], cy)
             gcode += pendown + '\n'
             gcode += 'G4 P0.5;; pen down \n'
-            gcode += "G1 F{} X{} Y{} Z0\n".format(self.g1_speed, self.c[0], cy)
+            #gcode += "G1 F{} X{} Y{} Z0\n".format(self.g1_speed, self.c[0], cy)
             gcode += "G1 X{} Y{} Z0\n".format(self.b[0], by)
             gcode += "G1 X{} Y{} Z0\n".format(self.d[0], dy) 
             gcode += penup + '\n'
             gcode += 'G4 P0.5; pen up \n'
-        gcode += "\n"
+        # now b->a
+        gcode += "G0 F{} X{} Y{} Z0\n".format(self.g0_speed, self.b[0], by)
+        gcode += pendown + '\n'
+        gcode += 'G4 P0.5; pen down \n'
+        gcode += "G1 F{} X{} Y{} Z0\n".format(self.g1_speed, self.a[0], ay)
+        gcode += penup + '\n'
+        gcode += 'G4 P0.5; pen up \n'
         
+        gcode += "\n"        
         return gcode
 
 def main(config):
@@ -301,7 +322,7 @@ def main(config):
     print('Stepsize: {}mm'.format(stepsize))
     print('Offset: {}/{}'.format( offset[0], offset[1]))
     print('Noise params:')
-    print('Parameter string: {}'.format(config.noise_params))
+    print('\tParameter string: {}'.format(config.noise_params))
     print('\tOctaves: {}'.format(octaves))
     print('\tPersistence: {}'.format(persistence))
     print('\tLacunarity: {}'.format(lacunarity))
@@ -309,6 +330,7 @@ def main(config):
     print('\trepeatx: {}'.format(repeatx))
     print('\trepeaty: {}'.format(repeaty))
     print('Arrow parameters')
+    print('\tParameter string: {}'.format(config.arrow_params))
     print('\tArrow length: {}'.format(arrowlength))
     print('\tTip length {} ({})'.format(tiplength, tiptype))
     

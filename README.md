@@ -64,7 +64,7 @@ It creates an SVG file, as well as a gcode file that describes the arrows. Here'
 
 Code to place circles of varying radii onto a binary image mask. Depends on OpenCV  (cv2 module in Python). Below is an example of a mask image of a snake, converted to a pattern of circles, which is exported as an SVG vector image:
 
-![snake_example](/Users/armin/code/plotter_code/images/snake_example.png)
+![snake_example](images/snake_example.png)
 
 
 The command that produced the pattern is as follows:
@@ -87,7 +87,7 @@ python pack_circles.py masks/mask-snake.png -m 200 -n 1000 --r_min 3 --r_max 18 
 
 Here is an example where r_min was set to 3, but r_max was changed from 12, to 18, to 25:
 
-![r_max_comparison](/Users/armin/code/plotter_code/images/r_max_comparison.png)
+![r_max_comparison](images/r_max_comparison.png)
 
 
 
@@ -101,7 +101,7 @@ pack_circles.py masks/mask_snake.png -i -n 1000 --r_min 2 --r_max 12 --offset 3 
 
 
 
-![snake_laser_cut](/Users/armin/code/plotter_code/images/snake_laser_cut.jpeg)
+![snake_laser_cut](images/snake_laser_cut.jpeg)
 
 
 

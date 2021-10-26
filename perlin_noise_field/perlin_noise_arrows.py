@@ -21,21 +21,23 @@ Armin H. / Feb-9-2020
 """
 import argparse
 import math
-import svgwrite
 import numpy as np
 import random
 try:
     import svgwrite
     from svgwrite import cm, mm 
-except ImportError:
-    print('svgwrite module needs to be installed.')
-    print('https://github.com/mozman/svgwrite')
+except ImportError as e:
+    # msg = 
+    msg = 'svgwrite module needs to be installed.\nSee: '
+    msg += 'https://github.com/mozman/svgwrite'
+    raise ImportError( msg )
 try:
     from noise import pnoise3, snoise3
-except ImportError:
-    print('Noise module needs to be installed.\nSee: ')
-    print('https://github.com/caseman/noise')
-    
+except ImportError as e:
+    # msg = e
+    msg = 'Noise module needs to be installed.\nSee: '
+    msg += 'https://github.com/caseman/noise'
+    raise ImportError( msg )
     
 #############################################################
 #%%  SET PARAMETERS HERE:
@@ -286,7 +288,7 @@ class Arrow(object):
         gcode += penup + '\n'
         gcode += 'G4 P0.5; pen up \n'
         
-        gcode += "\n"        
+        gcode += "\n"
         return gcode
 
 def main(config):

@@ -17,7 +17,7 @@ def save_gcode_to_file(gc_str, fn):
 def parse_args():
     PARSER = argparse.ArgumentParser(description='Make a grid in gcode')
     PARSER.add_argument('width', help='Width of bed (mm)', type=int, nargs=1)
-    PARSER.add_argument('height', help='Height of bed (mm)', type=int,nargs=1)    
+    PARSER.add_argument('height', help='Height of bed (mm)', type=int,nargs=1)
     PARSER.add_argument('gridspacing', help='Gridspacing (mm).', type=int,nargs=1)
     PARSER.add_argument('-s0', '--speed_g0', help='Speed in mm/min for G0 command (fast placement)',
                         default=4000)
@@ -27,9 +27,9 @@ def parse_args():
     PARSER.add_argument('-o', '--gcode_output', 
                         help='Save gcode to file if file name specified.', type=str, default='')
     PARSER.add_argument('--pen_up', 
-                        help='GCode for Pen Up movement.', type=str, default="M3 S120\nG4 P0.5; Pen up\n")
+                        help='GCode for Pen Up movement.', type=str, default="M3 S217\nG4 P0.5; Pen up\n")
     PARSER.add_argument('--pen_down', 
-                        help='GCode for Pen Down movement.', type=str, default="M3 S10\nG4 P0.5; Pen down\n")
+                        help='GCode for Pen Down movement.', type=str, default="M3 S70\nG4 P0.5; Pen down\n")
     return PARSER.parse_args()
     
 def verbose_print(str, v=False):
@@ -49,7 +49,7 @@ def main(config):
     gcode_output = config.gcode_output
     # M3 spindle command changes pulse duration of PWM output,
     # driving the RC servo that lifts the pen
-    # S10 has pen in down position, S120 in up position
+    # eg: S10 has pen in down position, S120 in up position
     pen_down = config.pen_down
     pen_up = config.pen_up
     g1_speed = config.speed_g1 # mm/min speed for G1 command
@@ -78,24 +78,24 @@ G0 F{s} X{x} Y{y}; go to {x}/{y}
             gcode_string += pen_down
             gcode_string += "G1 F{s} X{x} Y{y}; go to {x}/{y}\n".format(s=g1_speed, x=width, y=y)
             gcode_string += pen_up
-            if y+gridspacing <= width:
+            if y+gridspacing <= height:
                 verbose_print("Goto fast to {}/{}".format(width, y+gridspacing), v)
-                gcode_string += "G0 F{s} X{x} Y{y}; go to {x}/{y}\n".format(s=g0_speed, x=width, y=y+gridspacing)
+                gcode_string += "G0 F{s} X{x} Y{y}; go fast to {x}/{y}\n".format(s=g0_speed, x=width, y=y+gridspacing)
         else:
             verbose_print("Line from {}/{} to 0/{} ".format(width,y,y), v)
             gcode_string += pen_down
             gcode_string += "G1 F{s} X{x} Y{y}; go to {x}/{y}\n".format(s=g1_speed, x=0, y=y)
             gcode_string += pen_up  
-            if y+gridspacing <= width:
+            if y+gridspacing <= height:
                 verbose_print("Goto fast to 0/{}".format(y+gridspacing), v)
-                gcode_string += "G0 F{s} X{x} Y{y}; go to {x}/{y}\n".format(s=g0_speed, x=0, y=y+gridspacing)
+                gcode_string += "G0 F{s} X{x} Y{y}; go fast to {x}/{y}\n".format(s=g0_speed, x=0, y=y+gridspacing)
         c+=1
     verbose_print("\nDone with horizontal lines\n", v)
     
     # Go back to origin:
     verbose_print("Go fast to 0/0\n", v)
     gcode_string += "G0 F{s} X{x} Y{y}; go to {x}/{y}\n".format(s=g0_speed, x=0, y=0)
-    
+    gcode_string += "; VERTICAL LINES follow\n"
     # Draw vertical lines:
     c=0
     for x in range(0,width+gridspacing, gridspacing):
@@ -105,8 +105,8 @@ G0 F{s} X{x} Y{y}; go to {x}/{y}
             gcode_string += "G1 F{s} X{x} Y{y}; go to {x}/{y}\n".format(s=g1_speed, x=x, y=height)
             gcode_string += pen_up
             if x+gridspacing <= width:
-                verbose_print("Goto fast to {}/{}".format(x+gridspacing, width), v)        
-                gcode_string += "G0 F{s} X{x} Y{y}; go to {x}/{y}\n".format(s=g0_speed, x=x+gridspacing, y=width)
+                verbose_print("Goto fast to {}/{}".format(x+gridspacing, height), v)
+                gcode_string += "G0 F{s} X{x} Y{y}; go fast to {x}/{y}\n".format(s=g0_speed, x=x+gridspacing, y=height)
         else:
             verbose_print("Line from {}/{} to {}/0".format(x,height,x), v)
             gcode_string += pen_down
@@ -114,7 +114,7 @@ G0 F{s} X{x} Y{y}; go to {x}/{y}
             gcode_string += pen_up 
             if x+gridspacing <= width:
                 verbose_print("Goto fast to {}/0".format(x+gridspacing), v)
-                gcode_string += "G0 F{s} X{x} Y{y}; go to {x}/{y}\n".format(s=g0_speed, x=x+gridspacing, y=0)
+                gcode_string += "G0 F{s} X{x} Y{y}; go fast to {x}/{y}\n".format(s=g0_speed, x=x+gridspacing, y=0)
         c+=1
     # Go back home
     gcode_string += "G0 F{s} X{x} Y{y}; go to {x}/{y}".format(s=g0_speed, x=0, y=0)

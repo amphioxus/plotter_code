@@ -1,6 +1,6 @@
 # Plotter code
 
-A collection of simple code for playing around with my OpenBuilds Acro 55 plotter / laser engraver.
+A collection of simple code for playing around with my OpenBuilds Acro 55 plotter / laser engraver. This repository serves as my notebook so I can set up the system again when needed.
 
 ## Plotter hardware
 
@@ -19,13 +19,13 @@ The plotter pen is raised and dropped by controlling an RC servo. To use the sys
 * Maximum spindle speed, RPM ($30): 1000
 * Minimum spindle speed, RPM ($31): 0
 
-Note: For laser engraving, I bought "LightBurn" (https://lightburnsoftware.com/), which does an excellent job when importing vector or raster images and turning them into an engraving. It's not too convenient when using it for controlling the system when the plotter pen is installed, as it's optimized for laser systems.
+**Note:** For laser engraving, I bought "LightBurn" (https://lightburnsoftware.com/), which does an excellent job when importing vector or raster images and turning them into an engraving. It's not too convenient when using it for controlling the system when the plotter pen is installed, as it's optimized for laser systems.
 
 
 
 ## placement_grid.py
 
-A simple script that creates gcode for drawing a rectilinear grid onto my plotter bed
+A simple script that creates gcode for drawing a rectilinear grid onto my plotter bed. Useful for lining up paper.
 
 Example:
 
@@ -42,20 +42,67 @@ For options, type:
 ```
 python placement_grid.py -h
 ```
+Here's how the grid looks like in the OpenBuilds Control software GUI:
 
 ![OpenBuilds CONTROL screenshot](images/placement_grid_screenshot.png)
 
 
+
+
 ## Perlin noise field
 
-Script: perlin_noise_arrows.py
-Subfolder: perlin_noise_field
+**Script:** perlin_noise_arrows.py
+**Subfolder:** perlin_noise_field
 
 A script to create 2D field of arrows, oriented using Perlin noise. (Uses: https://github.com/caseman/noise) 
 
-It creates an SVG file, as well as a gcode file that describes the arrows. Here's a 30x30 example with default noise settings:
+It depends on the following modules:
+
+* svgwrite ('https://github.com/mozman/svgwrite)
+
+* noise (https://github.com/caseman/noise)
+
+  It creates an SVG file, as well as a gcode file that describes the arrows. Here's a 30x30 example with default noise settings:
 
 ![A sample field of arrows](images/Perlin_noise_field.jpg)
+
+### Help output
+
+```bash
+usage: perlin_noise_arrows.py [-h] [--offset OFFSET OFFSET] [--border BORDER]
+                              [-s0 G0_SPEED] [-s1 G1_SPEED] [--pen_up PEN_UP]
+                              [--pen_down PEN_DOWN] [-n NOISE_PARAMS]
+                              [-a ARROW_PARAMS] [--rect_only]
+                              width height stepsize
+
+Make a field of arrows either as an SVG image, or in gcode. Units are mm.
+
+positional arguments:
+  width                 Width of bed (mm)
+  height                Height of bed (mm)
+  stepsize              Stepsize, i.e. distance between arrows. (mm).
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --offset OFFSET OFFSET
+                        Offset from origin
+  --border BORDER       Border for bounding box rectangle.
+  -s0 G0_SPEED, --g0_speed G0_SPEED
+                        Speed in mm/min for G0 command (fast placement)
+  -s1 G1_SPEED, --g1_speed G1_SPEED
+                        Speed in mm/min for G1 command (pen movement)
+  --pen_up PEN_UP       GCode for Pen Up movement.
+  --pen_down PEN_DOWN   GCode for Pen Down movement.
+  -n NOISE_PARAMS, --noise_params NOISE_PARAMS
+                        Parameters for Perlin noise, separated by a pipe
+                        character. Parameters: p,s{pnoise or
+                        snoise}|octaves|persistence|lacunarity|z (rand, or an
+                        integer|repeat x|repeat y
+  -a ARROW_PARAMS, --arrow_params ARROW_PARAMS
+                        Parameters for arrows, each separated by a pipe
+                        character. Parameters: length|tiplength|rel
+  --rect_only           Only draw rectangle, not arrows
+```
 
 
 

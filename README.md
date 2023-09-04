@@ -200,5 +200,15 @@ optional arguments:
 
 
 
+## Offset lines
+
+The subfolder `offset_lines` contains some brief test code that shows how to use the svg-to-gcode library (https://pypi.org/project/svg-to-gcode/) to create gcode.
+
+
+
+The `CustomPenPlotterInterface()` class is a custom interface for my Acro 55, using a servo-controlled pen holder. Lines are created from `svg_to_gcode.geometry` objects and then compiled to gcode using an instance of `svg_to_gcode.compiler.Compiler`.
+
+
+
 
 

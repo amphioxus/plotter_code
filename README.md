@@ -208,7 +208,4 @@ The subfolder `offset_lines` contains some brief test code that shows how to use
 
 The `CustomPenPlotterInterface()` class is a custom interface for my Acro 55, using a servo-controlled pen holder. Lines are created from `svg_to_gcode.geometry` objects and then compiled to gcode using an instance of `svg_to_gcode.compiler.Compiler`.
 
-
-
-
-
+![offset_lines_example](images/offset_lines_example.jpg)

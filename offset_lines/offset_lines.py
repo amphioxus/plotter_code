@@ -9,9 +9,9 @@ Uses svg-to-gcode library (https://pypi.org/project/svg-to-gcode/) to make gcode
 """
 import sys
 try:
-    from svg_to_gcode.svg_parser import parse_file
+    # from svg_to_gcode.svg_parser import parse_file
     from svg_to_gcode.compiler import Compiler, interfaces
-    from svg_to_gcode.formulas import linear_map
+    # from svg_to_gcode.formulas import linear_map
     from svg_to_gcode import geometry as geom
 except:
     print("This example code depends on the svg_to_gcode library.")
